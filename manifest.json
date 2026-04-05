@@ -1,0 +1,17 @@
+{
+  "name": "Critique AI",
+  "short_name": "Critique",
+  "description": "AI-powered personal coaching for confidence and self-improvement",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/4712/4712035.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
