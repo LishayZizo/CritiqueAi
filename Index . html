@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#111827">
+    <meta name="description" content="AI-powered personal coaching for confidence, fitness, and self-improvement">
+    <title>Critique AI</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <link rel="icon" type="image/png" href="icons/icon-72x72.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * { 
+            font-family: 'Inter', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        body {
+            overscroll-behavior-y: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        #app-container {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .progress-ring {
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        
+        .level-badge {
+            transition: all 0.3s ease;
+        }
+        
+        .level-badge.active {
+            transform: scale(1.1);
+            filter: brightness(1.2);
+        }
+        
+        .scan-line {
+            animation: scan 2s linear infinite;
+        }
+        
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.8; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        
+        .slide-up {
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .feature-card:active {
+            transform: scale(0.98);
+        }
+        
+        .tab-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .chat-bubble {
+            position: relative;
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            margin: 8px 0;
+        }
+        
+        .chat-bubble.user {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .chat-bubble.ai {
+            background: rgba(255,255,255,0.1);
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .breathing-circle {
+            animation: breathe 4s ease-in-out infinite;
+        }
+        
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .safe-top { padding-top: env(safe-area-inset-top); }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        
+        .no-select {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white no-select">
+
+    <div id="app-container">
+        <nav class="fixed top-0 w-full z-50 glass-panel border-b border-gray-800 safe-top">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex justify-between items-center h-14">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-bolt text-white text-sm"></i>
+                        </div>
+                        <span class="text-lg font-bold tracking-tight">Critique AI</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="flex items-center space-x-1 bg-gray-800 rounded-full px-3 py-1">
+                            <i class="fas fa-fire text-orange-500 text-xs"></i>
+                            <span class="text-xs font-semibold" id="streak-count">12</span>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-xs font-bold">
+                            JD
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="pt-16 pb-20 px-4 max-w-7xl mx-auto safe-bottom">
+            
+            <section id="dashboard" class="section-content">
+                <div class="grid grid-cols-1 gap-4 mb-6">
+                    <div class="glass-panel rounded-2xl p-5 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500 rounded-full filter blur-3xl opacity-20 -mr-10 -mt-10"></div>
+                        <h3 class="text-gray-400 text-xs font-medium mb-2 uppercase tracking-wider">Today's Focus</h3>
+                        <div class="flex items-end justify-between">
+                            <div>
+                                <p class="text-xl font-bold mb-1">Social Confidence</p>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                        <div class="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full transition-all duration-1000" style="width: 85%"></div>
+                                    </div>
+                                    <span class="text-sm font-semibold text-purple-400">85%</span>
+                                </div>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                <i class="fas fa-chart-line text-purple-400 text-sm"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl p-5">
+                        <h3 class="text-gray-400 text-xs font-medium mb-3 uppercase tracking-wider">Daily Plan</h3>
+                        <div class="space-y-2">
+                            <div class="flex items-center space-x-3 p-3 rounded-xl bg-gray-800/50 active:bg-gray-700 transition" onclick="toggleTask(this)">
+                                <div class="w-5 h-5 rounded-full border-2 border-green-400 flex items-center justify-center task-check">
+                                    <i class="fas fa-check text-green-400 text-xs"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium">Morning Reflection</p>
+                                    <p class="text-xs text-gray-500">8:00 AM • 15 min</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3 p-3 rounded-xl bg-gray-800/30 opacity-70" onclick="toggleTask(this)">
+                                <div class="w-5 h-5 rounded-full border-2 border-gray-600 flex items-center justify-center task-check"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium">Voice Practice</p>
+                                    <p class="text-xs text-gray-500">2:00 PM • 15 min</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3 p-3 rounded-xl bg-gray-800/30 opacity-70" onclick="toggleTask(this)">
+                                <div class="w-5 h-5 rounded-full border-2 border-gray-600 flex items-center justify-center task-check"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium">Evening Review</p>
+                                    <p class="text-xs text-gray-500">8:00 PM • 15 min</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl p-5 flex justify-between items-center">
+                        <div>
+                            <p class="text-xs text-gray-400 mb-1">Daily Completion</p>
+                            <p class="text-2xl font-bold">75%</p>
+                            <p class="text-xs text-gray-500">3 of 4 tasks</p>
+                        </div>
+                        <div class="relative w-20 h-20">
+                            <svg class="w-20 h-20 progress-ring">
+                                <circle cx="40" cy="40" r="35" stroke="rgba(255,255,255,0.1)" stroke-width="6" fill="none"/>
+                                <circle cx="40" cy="40" r="35" stroke="url(#gradient)" stroke-width="6" fill="none" 
+                                        stroke-dasharray="220" stroke-dashoffset="55" stroke-linecap="round"/>
+                                <defs>
+                                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stop-color="#667eea" />
+                                        <stop offset="100%" stop-color="#764ba2" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <i class="fas fa-trophy text-purple-400 text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-5 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-semibold uppercase tracking-wider">Your Journey</h3>
+                        <span class="text-xs text-purple-400 font-medium">Level 4 • 2,450 XP</span>
+                    </div>
+                    <div class="flex justify-between items-center overflow-x-auto hide-scrollbar pb-2 space-x-2">
+                        <div class="level-badge flex flex-col items-center min-w-[60px] cursor-pointer" onclick="selectLevel(1)">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-800 flex items-center justify-center border-2 border-yellow-400 shadow-lg shadow-yellow-500/20">
+                                <i class="fas fa-star text-yellow-200 text-sm"></i>
+                            </div>
+                            <span class="text-[10px] font-medium text-yellow-400 mt-1">Lvl 1</span>
+                        </div>
+                        <div class="w-4 h-0.5 bg-gray-700"></div>
+                        <div class="level-badge flex flex-col items-center min-w-[60px] cursor-pointer" onclick="selectLevel(2)">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center border-2 border-amber-400">
+                                <i class="fas fa-shield-alt text-amber-200 text-sm"></i>
+                            </div>
+                            <span class="text-[10px] font-medium text-amber-400 mt-1">Lvl 2</span>
+                        </div>
+                        <div class="w-4 h-0.5 bg-gray-700"></div>
+                        <div class="level-badge flex flex-col items-center min-w-[60px] cursor-pointer" onclick="selectLevel(3)">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-gray-500 to-gray-700 flex items-center justify-center border-2 border-gray-400">
+                                <i class="fas fa-compass text-gray-200 text-sm"></i>
+                            </div>
+                            <span class="text-[10px] font-medium text-gray-400 mt-1">Lvl 3</span>
+                        </div>
+                        <div class="w-4 h-0.5 bg-gradient-to-r from-gray-700 to-purple-600"></div>
+                        <div class="level-badge active flex flex-col items-center min-w-[60px] cursor-pointer relative" onclick="selectLevel(4)">
+                            <div class="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center text-[8px]">
+                                <i class="fas fa-crown text-white"></i>
+                            </div>
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center border-2 border-purple-400 shadow-lg shadow-purple-500/30">
+                                <i class="fas fa-star text-white text-sm"></i>
+                            </div>
+                            <span class="text-[10px] font-medium text-purple-400 mt-1">Lvl 4</span>
+                        </div>
+                        <div class="w-4 h-0.5 bg-gray-700"></div>
+                        <div class="level-badge flex flex-col items-center min-w-[60px] cursor-pointer opacity-40" onclick="selectLevel(5)">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center border-2 border-blue-400">
+                                <i class="fas fa-crosshairs text-blue-200 text-sm"></i>
+                            </div>
+                            <span class="text-[10px] font-medium text-blue-400 mt-1">Lvl 5</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="text-sm font-semibold mb-3 uppercase tracking-wider text-gray-400">AI Tools</h3>
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <button onclick="openTool('physique')" class="feature-card glass-panel rounded-xl p-4 text-left transition-all duration-200 active:scale-95">
+                        <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center mb-2">
+                            <i class="fas fa-camera text-blue-400"></i>
+                        </div>
+                        <h4 class="font-semibold text-sm">Physique</h4>
+                        <p class="text-xs text-gray-500">Body analysis</p>
+                    </button>
+                    <button onclick="openTool('outfit')" class="feature-card glass-panel rounded-xl p-4 text-left transition-all duration-200 active:scale-95">
+                        <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center mb-2">
+                            <i class="fas fa-tshirt text-purple-400"></i>
+                        </div>
+                        <h4 class="font-semibold text-sm">Outfit</h4>
+                        <p class="text-xs text-gray-500">Style rating</p>
+                    </button>
+                    <button onclick="openTool('food')" class="feature-card glass-panel rounded-xl p-4 text-left transition-all duration-200 active:scale-95">
+                        <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center mb-2">
+                            <i class="fas fa-utensils text-green-400"></i>
+                        </div>
+                        <h4 class="font-semibold text-sm">Food</h4>
+                        <p class="text-xs text-gray-500">Nutrition scan</p>
+                    </button>
+                    <button onclick="openTool('voice')" class="feature-card glass-panel rounded-xl p-4 text-left transition-all duration-200 active:scale-95">
+                        <div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center mb-2">
+                            <i class="fas fa-microphone text-orange-400"></i>
+                        </div>
+                        <h4 class="font-semibold text-sm">Voice</h4>
+                        <p class="text-xs text-gray-500">Speaking coach</p>
+                    </button>
+                </div>
+            </section>
+
+            <section id="coach" class="section-content hidden h-[calc(100vh-140px)]">
+                <div class="glass-panel rounded-2xl h-full flex flex-col">
+                    <div class="p-4 border-b border-gray-800 flex justify-between items-center">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
+                                <i class="fas fa-robot text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-sm">AI Coach</h3>
+                                <p class="text-xs text-green-400 flex items-center">
+                                    <span class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5 animate-pulse"></span>
+                                    Online
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 hide-scrollbar">
+                        <div class="chat-bubble ai">
+                            <p class="text-sm">Hey! I'm your AI coach. Ready to level up today? 💪</p>
+                            <p class="text-xs text-gray-400 mt-2">I can help with:</p>
+                            <ul class="text-xs text-gray-300 mt-1 space-y-0.5 ml-3">
+                                <li>• Fitness & workouts</li>
+                                <li>• Social skills</li>
+                                <li>• Style tips</li>
+                                <li>• Confidence</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="p-3 border-t border-gray-800 bg-gray-900/50">
+                        <div class="flex space-x-2 mb-2 overflow-x-auto hide-scrollbar">
+                            <button onclick="sendQuickMessage('Give me a confidence boost')" class="whitespace-nowrap px-3 py-1.5 bg-gray-800 rounded-full text-xs active:bg-gray-700 transition">💪 Boost</button>
+                            <button onclick="sendQuickMessage('Posture tips')" class="whitespace-nowrap px-3 py-1.5 bg-gray-800 rounded-full text-xs active:bg-gray-700 transition">🧍 Posture</button>
+                            <button onclick="sendQuickMessage('What to wear today?')" class="whitespace-nowrap px-3 py-1.5 bg-gray-800 rounded-full text-xs active:bg-gray-700 transition">👔 Style</button>
+                        </div>
+                        <div class="flex space-x-2">
+                            <input type="text" id="chat-input" placeholder="Ask anything..." 
+                                   class="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-purple-500 transition"
+                                   onkeypress="if(event.key==='Enter') sendMessage()">
+                            <button onclick="sendMessage()" class="bg-gradient-to-r from-purple-600 to-blue-600 w-10 rounded-xl flex items-center justify-center active:scale-95 transition">
+                                <i class="fas fa-paper-plane text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tools" class="section-content hidden pb-24">
+                <h2 class="text-lg font-bold mb-4">AI Tools</h2>
+                
+                <div class="space-y-3 mb-6">
+                    <div onclick="simulateScan('physique')" class="glass-panel rounded-xl p-4 flex items-center space-x-4 active:bg-gray-800 transition">
+                        <div class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                            <i class="fas fa-camera text-blue-400 text-lg"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-sm">Physique Scan</h3>
+                            <p class="text-xs text-gray-400">Body composition & posture</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-600"></i>
+                    </div>
+
+                    <div onclick="simulateScan('outfit')" class="glass-panel rounded-xl p-4 flex items-center space-x-4 active:bg-gray-800 transition">
+                        <div class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                            <i class="fas fa-tshirt text-purple-400 text-lg"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-sm">Outfit Rating</h3>
+                            <p class="text-xs text-gray-400">Style analysis & tips</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-600"></i>
+                    </div>
+
+                    <div onclick="simulateScan('food')" class="glass-panel rounded-xl p-4 flex items-center space-x-4 active:bg-gray-800 transition">
+                        <div class="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
+                            <i class="fas fa-utensils text-green-400 text-lg"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-sm">Food Scanner</h3>
+                            <p class="text-xs text-gray-400">Calories & nutrition</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-600"></i>
+                    </div>
+
+                    <div onclick="simulateScan('posture')" class="glass-panel rounded-xl p-4 flex items-center space-x-4 active:bg-gray-800 transition">
+                        <div class="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                            <i class="fas fa-walking text-orange-400 text-lg"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-sm">Posture Check</h3>
+                            <p class="text-xs text-gray-400">Alignment correction</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-600"></i>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-xl p-4 mb-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                                <i class="fas fa-microphone text-orange-400"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-sm">Voice Coach</h3>
+                                <p class="text-xs text-gray-400">Speaking practice</p>
+                            </div>
+                        </div>
+                        <button onclick="toggleVoiceRecording()" id="voice-btn" class="w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center shadow-lg active:scale-95 transition">
+                            <i class="fas fa-microphone text-white"></i>
+                        </button>
+                    </div>
+                    <div id="voice-visualizer" class="hidden h-12 flex items-center justify-center space-x-1">
+                        <div class="w-1 bg-orange-400 rounded-full animate-pulse" style="height: 20%; animation-delay: 0s"></div>
+                        <div class="w-1 bg-orange-400 rounded-full animate-pulse" style="height: 60%; animation-delay: 0.1s"></div>
+                        <div class="w-1 bg-orange-400 rounded-full animate-pulse" style="height: 40%; animation-delay: 0.2s"></div>
+                        <div class="w-1 bg-orange-400 rounded-full animate-pulse" style="height: 80%; animation-delay: 0.3s"></div>
+                        <div class="w-1 bg-orange-400 rounded-full animate-pulse" style="height: 50%; animation-delay: 0.4s"></div>
+                    </div>
+                    <p id="voice-status" class="text-center text-xs text-gray-400">Tap to practice speaking</p>
+                </div>
+
+                <div class="glass-panel rounded-xl p-4 text-center">
+                    <h3 class="font-semibold text-sm mb-3">Breathing Exercise</h3>
+                    <div class="relative w-24 h-24 mx-auto mb-3">
+                        <div class="absolute inset-0 bg-blue-500/30 rounded-full breathing-circle"></div>
+                        <div class="absolute inset-2 bg-blue-500/20 rounded-full breathing-circle" style="animation-delay: 0.5s"></div>
+                        <div class="absolute inset-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                            <i class="fas fa-lungs text-white"></i>
+                        </div>
+                    </div>
+                    <button onclick="startBreathing()" class="px-4 py-2 bg-blue-600 rounded-full text-xs font-medium active:bg-blue-700 transition">Start</button>
+                </div>
+            </section>
+
+            <section id="progress" class="section-content hidden">
+                <h2 class="text-lg font-bold mb-4">Your Progress</h2>
+                
+                <div class="grid grid-cols-3 gap-3 mb-6">
+                    <div class="glass-panel rounded-xl p-3 text-center">
+                        <div class="text-2xl font-bold gradient-text">12</div>
+                        <p class="text-[10px] text-gray-400">Day Streak</p>
+                    </div>
+                    <div class="glass-panel rounded-xl p-3 text-center">
+                        <div class="text-2xl font-bold gradient-text">48</div>
+                        <p class="text-[10px] text-gray-400">Tasks Done</p>
+                    </div>
+                    <div class="glass-panel rounded-xl p-3 text-center">
+                        <div class="text-2xl font-bold gradient-text">2.4k</div>
+                        <p class="text-[10px] text-gray-400">Total XP</p>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-xl p-4 mb-4">
+                    <h3 class="text-sm font-semibold mb-3">Weekly Activity</h3>
+                    <div class="flex items-end justify-between h-32 space-x-1">
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="w-full bg-purple-500 rounded-t-sm" style="height: 60%"></div>
+                            <span class="text-[10px] text-gray-500 mt-1">M</span>
+                        </div>
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="w-full bg-purple-500 rounded-t-sm" style="height: 80%"></div>
+                            <span class="text-[10px] text-gray-500 mt-1">T</span>
+                        </div>
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="w-full bg-purple-500 rounded-t-sm" style="height: 45%"></div>
+                            <span class="text-[10px] text-gray-500 mt-1">W</span>
+                        </div>
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="w-full bg-purple-500 rounded-t-sm" style="height: 90%"></div>
+                            <span class="text-[10px] text-gray-500 mt-1">T</span>
+                        </div>
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="w-full bg-purple-500 rounded-t-sm" style="height: 70%"></div>
+                            <span class="text-[10px] text-gray-500 mt-1">F</span>
+                        </div>
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="w-full bg-gradient-to-t from-purple-500 to-blue-400 rounded-t-sm" style="height: 100%"></div>
+                            <span class="text-[10px] text-purple-400 mt-1 font-semibold">S</span>
+                        </div>
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="w-full bg-gray-700 rounded-t-sm" style="height: 30%"></div>
+                            <span class="text-[10px] text-gray-500 mt-1">S</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-xl p-4">
+                    <h3 class="text-sm font-semibold mb-3">Achievements</h3>
+                    <div class="grid grid-cols-4 gap-2">
+                        <div class="bg-gray-800/50 rounded-lg p-2 text-center">
+                            <div class="w-8 h-8 mx-auto mb-1 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                                <i class="fas fa-fire text-yellow-500 text-xs"></i>
+                            </div>
+                            <p class="text-[9px] text-gray-400">7-Day</p>
+                        </div>
+                        <div class="bg-gray-800/50 rounded-lg p-2 text-center">
+                            <div class="w-8 h-8 mx-auto mb-1 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                <i class="fas fa-dumbbell text-blue-500 text-xs"></i>
+                            </div>
+                            <p class="text-[9px] text-gray-400">Workout</p>
+                        </div>
+                        <div class="bg-gray-800/50 rounded-lg p-2 text-center opacity-40">
+                            <div class="w-8 h-8 mx-auto mb-1 rounded-full bg-gray-700 flex items-center justify-center">
+                                <i class="fas fa-crown text-gray-500 text-xs"></i>
+                            </div>
+                            <p class="text-[9px] text-gray-500">Lvl 5</p>
+                        </div>
+                        <div class="bg-gray-800/50 rounded-lg p-2 text-center opacity-40">
+                            <div class="w-8 h-8 mx-auto mb-1 rounded-full bg-gray-700 flex items-center justify-center">
+                                <i class="fas fa-users text-gray-500 text-xs"></i>
+                            </div>
+                            <p class="text-[9px] text-gray-500">Social</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <nav class="fixed bottom-0 w-full bg-gray-900/95 backdrop-blur-lg border-t border-gray-800 safe-bottom z-50">
+            <div class="flex justify-around items-center h-16 pb-safe">
+                <button onclick="showSection('dashboard')" class="nav-btn flex flex-col items-center space-y-1 text-purple-500 w-16">
+                    <i class="fas fa-home text-lg"></i>
+                    <span class="text-[10px]">Home</span>
+                </button>
+                <button onclick="showSection('coach')" class="nav-btn flex flex-col items-center space-y-1 text-gray-500 w-16">
+                    <i class="fas fa-robot text-lg"></i>
+                    <span class="text-[10px]">Coach</span>
+                </button>
+                <button onclick="showSection('tools')" class="nav-btn flex flex-col items-center space-y-1 text-gray-500 w-16">
+                    <i class="fas fa-tools text-lg"></i>
+                    <span class="text-[10px]">Tools</span>
+                </button>
+                <button onclick="showSection('progress')" class="nav-btn flex flex-col items-center space-y-1 text-gray-500 w-16">
+                    <i class="fas fa-chart-bar text-lg"></i>
+                    <span class="text-[10px]">Stats</span>
+                </button>
+            </div>
+        </nav>
+
+        <div id="scan-modal" class="fixed inset-0 bg-black/95 z-[60] hidden flex items-center justify-center p-4">
+            <div class="bg-gray-900 rounded-2xl w-full max-w-sm p-5 relative border border-gray-800">
+                <button onclick="closeScanModal()" class="absolute top-4 right-4 text-gray-400 w-8 h-8 flex items-center justify-center">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <div id="scan-upload" class="text-center py-6">
+                    <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-800 flex items-center justify-center relative overflow-hidden">
+                        <div class="scan-line absolute w-full h-0.5 bg-blue-400 shadow-lg shadow-blue-400/50"></div>
+                        <i class="fas fa-camera text-xl text-gray-400"></i>
+                    </div>
+                    <h3 class="font-semibold mb-1" id="scan-title">Scan</h3>
+                    <p class="text-xs text-gray-400 mb-4">Good lighting works best</p>
+                    <button onclick="startScan()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl font-medium active:scale-95 transition text-sm">
+                        Start Camera
+                    </button>
+                </div>
+
+                <div id="scan-processing" class="hidden text-center py-6">
+                    <div class="relative w-20 h-20 mx-auto mb-3">
+                        <div class="absolute inset-0 border-4 border-gray-800 rounded-full"></div>
+                        <div class="absolute inset-0 border-4 border-t-blue-500 rounded-full animate-spin"></div>
+                        <i class="fas fa-brain absolute inset-0 flex items-center justify-center text-blue-400"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm mb-1">Analyzing...</h3>
+                    <p class="text-xs text-gray-400">AI processing</p>
+                </div>
+
+                <div id="scan-results" class="hidden">
+                    <h3 class="font-semibold mb-3 text-sm">Results</h3>
+                    <div class="space-y-2" id="results-content"></div>
+                    <button onclick="closeScanModal()" class="w-full mt-4 py-3 bg-gray-800 rounded-xl font-medium active:bg-gray-700 transition text-sm">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(() => {
+                console.log('Service Worker Registered');
+            });
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.section-content').forEach(section => {
+                section.classList.add('hidden');
+            });
+            document.getElementById(sectionId).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-purple-500');
+                btn.classList.add('text-gray-500');
+            });
+            
+            event.currentTarget.classList.remove('text-gray-500');
+            event.currentTarget.classList.add('text-purple-500');
+        }
+
+        function toggleTask(element) {
+            const check = element.querySelector('.task-check');
+            const isChecked = check.innerHTML.includes('check');
+            
+            if (isChecked) {
+                check.innerHTML = '';
+                check.classList.remove('bg-green-400/20');
+                element.classList.add('opacity-70');
+            } else {
+                check.innerHTML = '<i class="fas fa-check text-green-400 text-xs"></i>';
+                check.classList.add('bg-green-400/20');
+                element.classList.remove('opacity-70');
+                if (navigator.vibrate) navigator.vibrate(50);
+            }
+        }
+
+        function selectLevel(level) {
+            document.querySelectorAll('.level-badge').forEach((badge, index) => {
+                if (index + 1 === level) {
+                    badge.classList.add('active');
+                } else {
+                    badge.classList.remove('active');
+                }
+            });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            addMessage(message, 'user');
+            input.value = '';
+            
+            setTimeout(() => {
+                const responses = [
+                    "Great goal! Let's break it down into steps. 💪",
+                    "Start with small daily habits. Consistency wins! 🎯",
+                    "You're crushing it! Keep the momentum! 🔥",
+                    "Try this for 15 mins daily. You've got this! ⭐",
+                    "Your confidence is growing! Next: social skills! 🚀"
+                ];
+                addMessage(responses[Math.floor(Math.random() * responses.length)], 'ai');
+            }, 1000);
+        }
+
+        function sendQuickMessage(message) {
+            document.getElementById('chat-input').value = message;
+            sendMessage();
+        }
+
+        function addMessage(text, sender) {
+            const container = document.getElementById('chat-messages');
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble ${sender} slide-up`;
+            bubble.innerHTML = `<p class="text-sm">${text}</p>`;
+            container.appendChild(bubble);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function openTool(tool) {
+            showSection('tools');
+            setTimeout(() => simulateScan(tool), 100);
+        }
+
+        let currentTool = '';
+        function simulateScan(tool) {
+            currentTool = tool;
+            const titles = {
+                'physique': 'Physique Scan',
+                'outfit': 'Outfit Rating',
+                'food': 'Food Scanner',
+                'posture': 'Posture Check'
+            };
+            document.getElementById('scan-title').textContent = titles[tool];
+            document.getElementById('scan-modal').classList.remove('hidden');
+            document.getElementById('scan-upload').classList.remove('hidden');
+            document.getElementById('scan-processing').classList.add('hidden');
+            document.getElementById('scan-results').classList.add('hidden');
+        }
+
+        function startScan() {
+            document.getElementById('scan-upload').classList.add('hidden');
+            document.getElementById('scan-processing').classList.remove('hidden');
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            
+            setTimeout(() => {
+                showResults();
+            }, 2000);
+        }
+
+        function showResults() {
+            document.getElementById('scan-processing').classList.add('hidden');
+            document.getElementById('scan-results').classList.remove('hidden');
+            
+            const results = {
+                'physique': [
+                    { label: 'Body Fat', value: '18% (Good)', color: 'text-green-400' },
+                    { label: 'Muscle', value: 'Above Avg', color: 'text-blue-400' },
+                    { label: 'Posture', value: 'Slight fwd neck', color: 'text-yellow-400' }
+                ],
+                'outfit': [
+                    { label: 'Rating', value: '8.5/10', color: 'text-purple-400' },
+                    { label: 'Colors', value: 'Excellent', color: 'text-green-400' },
+                    { label: 'Fit', value: 'Slightly loose', color: 'text-yellow-400' }
+                ],
+                'food': [
+                    { label: 'Calories', value: '650 kcal', color: 'text-orange-400' },
+                    { label: 'Protein', value: '42g', color: 'text-blue-400' },
+                    { label: 'Carbs', value: '58g', color: 'text-yellow-400' }
+                ],
+                'posture': [
+                    { label: 'Spine', value: 'Minor dev', color: 'text-yellow-400' },
+                    { label: 'Shoulders', value: 'Balanced', color: 'text-green-400' },
+                    { label: 'Head', value: 'Forward tilt', color: 'text-red-400' }
+                ]
+            };
+            
+            const html = results[currentTool].map(r => `
+                <div class="flex justify-between items-center p-2.5 bg-gray-800 rounded-lg">
+                    <span class="text-xs text-gray-400">${r.label}</span>
+                    <span class="text-xs font-semibold ${r.color}">${r.value}</span>
+                </div>
+            `).join('');
+            
+            document.getElementById('results-content').innerHTML = html;
+        }
+
+        function closeScanModal() {
+            document.getElementById('scan-modal').classList.add('hidden');
+        }
+
+        let isRecording = false;
+        function toggleVoiceRecording() {
+            isRecording = !isRecording;
+            const btn = document.getElementById('voice-btn');
+            const visualizer = document.getElementById('voice-visualizer');
+            const status = document.getElementById('voice-status');
+            
+            if (isRecording) {
+                btn.innerHTML = '<i class="fas fa-stop text-white"></i>';
+                btn.classList.add('animate-pulse');
+                visualizer.classList.remove('hidden');
+                status.textContent = 'Recording...';
+                status.classList.add('text-red-400');
+                if (navigator.vibrate) navigator.vibrate(200);
+                
+                setTimeout(() => {
+                    toggleVoiceRecording();
+                    status.textContent = 'Great vocal variety!';
+                    status.classList.remove('text-red-400');
+                    status.classList.add('text-green-400');
+                    setTimeout(() => {
+                        status.textContent = 'Tap to practice';
+                        status.classList.remove('text-green-400');
+                    }, 2000);
+                }, 4000);
+            } else {
+                btn.innerHTML = '<i class="fas fa-microphone text-white"></i>';
+                btn.classList.remove('animate-pulse');
+                visualizer.classList.add('hidden');
+            }
+        }
+
+        function startBreathing() {
+            alert('Breathe with the circle: Inhale 4s, Hold 4s, Exhale 4s');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('chat-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+        });
+    </script>
+</body>
+</html>
